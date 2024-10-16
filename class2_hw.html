@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js | Homework 2</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        /* Basic styles for the SVG */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        th, td {
+        padding: 5px;
+        text-align: left;
+        }
+
+        td.bold {
+            color: red;
+        }
+
+        svg {
+            overflow: visible;
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <!-- div container -->
+    <div id="container"></div>
+
+
+    <script>
+
+        //select container
+        const container = d3.select('#container');
+
+        // append SVG
+        const svg = container.append('svg');
+        //add margin 
+        const margin_top = 100;
+        const margin_left = 40;
+
+        //Import the csv
+        d3.csv('nba_data.csv').then(function(data){
+
+            //convert the points from strings to numbers
+            data.forEach(d => {
+                //rename properties, convert to numbers
+                d.ppg = +d['points_per_game'];
+                d.car = +d['career_points'];
+            });
+
+            // sort players by points per game, with highest on top
+            data = data.sort(function(x, y){
+                return d3.descending(x.ppg, y.ppg);
+            })
+
+
+            //add group of text with players names
+            svg.selectAll('text')
+                //append text element
+                .data(data).enter().append('text')
+                //add x variable
+                .attr('x', margin_left)
+                //add text anchor (end)
+                .attr('text-anchor', 'end')
+                //add y variable
+                .attr('y', (d, i) => margin_top + i * 30)
+                //add player name
+                .text(d => d.player);
+
+            //add rectangles
+            svg.selectAll('rect')
+                //append rectangles
+                .data(data).enter().append('rect')
+                //put X variable
+                .attr('x', margin_left + 10)
+                //put Y variable
+                .attr('y', (d, i) => margin_top + i * 30 - 15)
+                //Give a width that reflects points per game (ppg)
+                .attr('width', d => d.ppg * 10)
+                //Give a height of 20
+                .attr('height', 20)
+                //Give a fill color to your hearts desire
+                .attr('fill', 'RoyalBlue')
+                .attr('stroke', "Black")
+                .attr('stroke-width', 1)
+                
+            //add group of text for the points per game
+            svg.selectAll('text.points-per-game')
+                //append text element
+                .data(data).enter().append('text')
+                //add x variable with margin using the ppg data point
+                .attr('x', function(d) {
+                    return margin_left + d.ppg * 9;
+                })
+                //add text anchor (start)
+                .attr('text-anchor', 'start')
+                //add y variable
+                .attr('y', (d, i) => margin_top + i * 30)
+                //add text
+                .text(function(d) {
+                    return d.ppg;  // Display the points per game value
+                });
+
+        });
+
+
+
+
+    
+    </script>
+
+</body>
+
+
+
+
+</html>

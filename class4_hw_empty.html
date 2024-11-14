@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js | Homework 4</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        th, td {
+            padding: 5px;
+            text-align: left;
+        }
+        td.bold {
+            color: red;
+        }
+        svg {
+            overflow: visible;
+        }
+        span.bold {
+            font-weight: 700;
+        }
+        rect {
+            cursor: pointer;
+        }
+        .tooltip {
+            position: absolute;
+            padding: 5px;
+            background-color: #fff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Button to switch data views -->
+    <button id="change_data">Change to Career Points</button>
+
+    <!-- Container for the visualization -->
+    <div id="container"></div>
+
+    <script>
+
+        // Tooltip setup
+        const tooltip = d3.select('body')
+            .append('div')
+            .attr('class','tooltip');
+
+        // Button and container selection
+        const button = d3.select('#change_data');
+        const container = d3.select('#container');
+
+        // Append SVG to container
+        const svg = container.append('svg');
+
+        // Define margins
+        const margin_left = 200;
+        const margin_top = 20;
+
+        // Load CSV data
+        d3.csv('nba_data.csv').then(function(data){
+
+            // Convert string values to numbers for points data
+            data.forEach(d => {
+                d.ppg = +d['points_per_game'];
+                d.car = +d['career_points'];
+            });
+
+            // Sort data by points per game in descending order
+            data = data.sort((x, y) => d3.descending(x.ppg, y.ppg));
+
+            // Scale for points per game (range 5px to 100px)
+            const barLength_ppg = d3.scaleLinear()
+                .domain([0, 30.1])
+                .range([5, 100]);
+
+            // Scale for career points (range 5px to 100px)
+            const barLength_career = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.car)])
+                .range([5, 100]);
+
+            // Color scale for player names
+            const textColor = d3.scaleOrdinal()
+                .domain(["Michael Jordan", 'Lebron James', 'Karl Malone', 'Kobe Bryant', 'Kareem Abdul-Jabbar'])
+                .range(["red", "red", "Purple", "Purple", "Purple"]);
+
+            // Append player names to the SVG
+            svg.selectAll('text')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', margin_left)
+                .attr('text-anchor', 'end')
+                .attr('y', (d, i) => margin_top + (i * 35))
+                .attr('fill', d => textColor(d.player))
+                .text(d => d.player);
+
+            // Draw initial bars for points per game
+            svg.selectAll('rect')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('x', margin_left + 10)
+                .attr('y', (d, i) => (margin_top - 15) + (i * 35))
+                .attr('width', d => barLength_ppg(d.ppg))
+                .attr('height', 20)
+                .attr('fill', 'gray')
+                // Tooltip on hover
+                .on('mousemove', function(event, d){
+                    d3.select(this).style('opacity', 0.5);
+                    tooltip
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY + 10) + "px")
+                        .style('opacity', 1)
+                        .text(`PPG: ${d.ppg}, Career Points: ${d.car}`);
+                })
+                .on('mouseleave', function(){
+                    d3.select(this).style('opacity', 1);
+                    tooltip.style('opacity', 0);
+                })
+                .attr('class', 'bars'); 
+
+            // Add text labels for the bar values
+            svg.selectAll('.number_text')
+                .data(data)
+                .enter()
+                .append('text')
+                .attr('x', d => margin_left + barLength_ppg(d.ppg) + 15)
+                .attr('text-anchor', 'start')
+                .attr('y', (d, i) => margin_top + (i * 35))
+                .text(d => d.ppg)
+                .attr('class', 'number_text');
+
+            // Variable to toggle between PPG and Career Points
+            let isPPG = true;
+
+            // Button click event to switch between PPG and Career Points
+            button.on('click', function(){
+                isPPG = !isPPG; // Toggle between t and f
+
+                svg.selectAll('.bars')
+                    .transition()
+                    .duration(500)
+                    .attr('width', d => isPPG ? barLength_ppg(d.ppg) : barLength_career(d.car));
+
+                // Update text labels with a smooth transition
+                svg.selectAll('.number_text')
+                    .transition()
+                    .duration(500)
+                    .attr('x', d => margin_left + (isPPG ? barLength_ppg(d.ppg) : barLength_career(d.car)) + 15)
+                    .text(d => isPPG ? d.ppg : d.car);
+
+                // Update button text based on the current view
+                button.text(isPPG ? 'Change to Career Points' : 'Change to Points Per Game');
+            });
+
+        });
+    </script>
+
+</body>
+</html>
